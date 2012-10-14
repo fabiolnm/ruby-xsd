@@ -28,12 +28,25 @@ describe RubyXsd do
 
   describe "simple elements" do
     let(:template) {
-      schema % "<xs:element name='%s' />"
+      schema % "<xs:element name='%s' type='%s' />"
     }
 
     it "defines object attributes" do
-      RubyXsd.models_from template % [ "xsd_attr" ]
+      RubyXsd.models_from template % [ "xsd_attr", "xs:string" ]
       RubyXsd.new.must_respond_to :xsd_attr
+      RubyXsd.new.must_respond_to :xsd_attr=
+    end
+  end
+
+  describe "complex elements" do
+    let(:template) {
+      schema % "<xs:element name='%s' />"
+    }
+
+    it "defines a new Class" do
+      RubyXsd.models_from template % "xsd_complex"
+      defined?(XsdComplex).must_be :==, "constant"
+      XsdComplex.class.must_be :==, Class
     end
   end
 end

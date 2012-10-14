@@ -1,47 +1,53 @@
 require "ruby-xsd/version"
+require "active_support"
 require "nokogiri"
 
 class RubyXsd
   XMLSchemaNS = "http://www.w3.org/2001/XMLSchema"
 
-  def self.models_from xsd_definitions
-    doc = Nokogiri::XML xsd_definitions
+  class << self
+    include ActiveSupport::Inflector
 
-    schema = doc.children.first
-    raise "Invalid XMLSchema root" if schema.name != "schema"
-    raise "Missing XMLSchema namespace" if schema.namespace.nil?
-    raise "Wrong XMLSchema namespace" unless is_xml_schema_node schema
+    def models_from xsd_definitions
+      doc = Nokogiri::XML xsd_definitions
 
-    schema.children.each { |node| make_definition node }
-  end
+      schema = doc.children.first
+      raise "Invalid XMLSchema root" if schema.name != "schema"
+      raise "Missing XMLSchema namespace" if schema.namespace.nil?
+      raise "Wrong XMLSchema namespace" unless is_xml_schema_node schema
 
-  def self.make_definition node
-    if is_element_node node
-      attrs = node.attributes.to_hash
-      define_accessor attrs["name"]
-    end
-  end
-
-  private
-  def self.namespace_of node
-    node.namespace.href
-  end
-
-  def self.is_xml_schema_node node
-    namespace_of(node) == XMLSchemaNS
-  end
-
-  def self.is_element_node node
-    is_xml_schema_node node and node.name == "element"
-  end
-
-  def self.define_accessor name
-    define_method name do
-      instance_variable_get "@#{name}"
+      schema.children.each { |node| make_definition node }
     end
 
-    define_method "#{name}=" do |value|
-      instance_variable_set "@#{name}", value
+    def make_definition node
+      if is_element_node node
+        attrs = node.attributes.to_hash
+        name = attrs["name"].value
+        type = attrs["type"].value if attrs.has_key? "type"
+        if type.nil?
+          define_class name
+        else
+          attr_accessor name
+        end
+      end
+    end
+
+    private
+    def namespace_of node
+      node.namespace.href
+    end
+
+    def is_xml_schema_node node
+      namespace_of(node) == XMLSchemaNS
+    end
+
+    def is_element_node node
+      is_xml_schema_node node and node.name == "element"
+    end
+
+    def define_class name
+      name = classify name
+      Object.const_set name, Class.new
     end
   end
 end
