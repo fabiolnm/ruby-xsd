@@ -40,13 +40,40 @@ describe RubyXsd do
 
   describe "complex elements" do
     let(:template) {
-      schema % "<xs:element name='%s' />"
+      schema % "<xs:element name='%s'>%s</xs:element>"
+    }
+
+    let(:class_template) {
+      template % [ "xsd_complex", "" ]
+    }
+
+    let(:class_with_attrs_template) {
+      template % [ "xsd_complex_with_attr", %{
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="foo" type="xs:string" />
+            <xs:element name="bar" type="xs:string" />
+          </xs:sequence>
+        </xs:complexType>
+      }]
     }
 
     it "defines a new Class" do
-      RubyXsd.models_from template % "xsd_complex"
+      RubyXsd.models_from class_template
       defined?(XsdComplex).must_be :==, "constant"
       XsdComplex.class.must_be :==, Class
+    end
+
+    it "defines class attributes" do
+      RubyXsd.models_from class_with_attrs_template
+
+      defined?(XsdComplexWithAttr).must_be :==, "constant"
+      XsdComplexWithAttr.class.must_be :==, Class
+
+      obj = XsdComplexWithAttr.new
+      [ :foo, :foo=, :bar, :bar= ].each { |m|
+        obj.must_respond_to m
+      }
     end
   end
 end
