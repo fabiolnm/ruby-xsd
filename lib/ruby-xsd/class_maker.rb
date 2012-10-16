@@ -5,25 +5,31 @@ module ClassMaker
 
   XMLSchemaNS = "http://www.w3.org/2001/XMLSchema"
 
-  def make_definition node
+  def make_definition node, target=Object
+    return if is_text node
+
     attrs = node.attributes.to_hash
     name = attrs["name"].value
     if is_element node
       type = attrs["type"].value if attrs.has_key? "type"
       if type.nil?
         complex_node = select_children(node, "complexType").first
-        define_class name, complex_node
+        define_class name, complex_node, target
       else
         attr_accessor name
       end
     elsif is_complex_root node
-      define_class name, node
+      define_class name, node, target
     end
   end
 
   private
   def namespace_of node
     node.namespace.href
+  end
+
+  def is_text node
+    node.name == "text"
   end
 
   def is_xml_schema_node node
@@ -38,7 +44,7 @@ module ClassMaker
     is_xml_schema_node node and node.name == "complexType"
   end
 
-  def define_class name, node
+  def define_class name, node, target
     name = classify name
 
     elems = []
@@ -51,10 +57,10 @@ module ClassMaker
       class << self
         include ClassMaker
       end
-      elems.each { |e| make_definition e }
+      elems.each { |e| make_definition e, self }
     end
 
-    Object.const_set name, cls
+    target.const_set name, cls
   end
 
   def select_children node, name

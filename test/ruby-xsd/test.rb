@@ -23,7 +23,7 @@ describe RubyXsd do
   end
 
   let(:schema) {
-    "<xs:schema xmlns:xs='#{RubyXsd::XMLSchemaNS}'>%s</xs:schema>"
+    "<xs:schema xmlns:xs='#{ClassMaker::XMLSchemaNS}'>%s</xs:schema>"
   }
 
   describe "simple elements" do
@@ -111,6 +111,38 @@ describe RubyXsd do
       [ :foo, :foo=, :bar, :bar= ].each { |m|
         obj.must_respond_to m
       }
+    end
+  end
+
+  describe "nested classes" do
+    let(:template) {
+      schema % %{
+        <xs:complexType name='%s'>
+          <xs:sequence>%s</xs:sequence>
+        </xs:complexType>
+      }
+    }
+
+    let(:elements_template) {
+      template % [ "elem_parent", %{
+        <xs:element name="nested1"></xs:element>
+        <xs:element name="nested2"></xs:element>
+      }]
+    }
+
+    it "nests with complex elements" do
+      RubyXsd.models_from elements_template
+
+      defined?(ElemParent).must_be :==, "constant"
+      ElemParent.class.must_be :==, Class
+
+      defined?(Nested1).must_be_nil
+      defined?(ElemParent::Nested1).must_be :==, "constant"
+      ElemParent::Nested1.class.must_be :==, Class
+
+      defined?(Nested2).must_be_nil
+      defined?(ElemParent::Nested2).must_be :==, "constant"
+      ElemParent::Nested2.class.must_be :==, Class
     end
   end
 end
