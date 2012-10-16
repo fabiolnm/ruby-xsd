@@ -3,8 +3,6 @@ require "ruby-xsd/class_maker"
 require "nokogiri"
 
 class RubyXsd
-  XMLSchemaNS = "http://www.w3.org/2001/XMLSchema"
-
   class << self
     include ClassMaker
 
