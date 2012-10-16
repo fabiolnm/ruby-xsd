@@ -76,4 +76,41 @@ describe RubyXsd do
       }
     end
   end
+
+  describe "complex roots" do
+    let(:template) {
+      schema % "<xs:complexType name='%s'>%s</xs:complexType>"
+    }
+
+    let(:complex_root) {
+      template % [ "complex_root", "" ]
+    }
+
+    let(:root_with_attrs_template) {
+      template % [ "xsd_root_with_attr", %{
+        <xs:sequence>
+          <xs:element name="foo" type="xs:string" />
+          <xs:element name="bar" type="xs:string" />
+        </xs:sequence>
+      }]
+    }
+
+    it "defines new class" do
+      RubyXsd.models_from complex_root
+      defined?(ComplexRoot).must_be :==, "constant"
+      ComplexRoot.class.must_be :==, Class
+    end
+
+    it "defines class attributes" do
+      RubyXsd.models_from root_with_attrs_template
+
+      defined?(XsdRootWithAttr).must_be :==, "constant"
+      XsdRootWithAttr.class.must_be :==, Class
+
+      obj = XsdRootWithAttr.new
+      [ :foo, :foo=, :bar, :bar= ].each { |m|
+        obj.must_respond_to m
+      }
+    end
+  end
 end
