@@ -130,6 +130,25 @@ describe RubyXsd do
       }]
     }
 
+    let(:elements_template_with_attr) {
+      template % [ "elem_parent_with_attr", %{
+        <xs:element name="nested1">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="foo" type="xs:string" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="nested2">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="bar" type="xs:string" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      }]
+    }
+
     it "nests with complex elements" do
       RubyXsd.models_from elements_template
 
@@ -143,6 +162,16 @@ describe RubyXsd do
       defined?(Nested2).must_be_nil
       defined?(ElemParent::Nested2).must_be :==, "constant"
       ElemParent::Nested2.class.must_be :==, Class
+    end
+
+    it "nests with complex elements" do
+      RubyXsd.models_from elements_template_with_attr
+
+      ElemParentWithAttr::Nested1.new.must_respond_to :foo
+      ElemParentWithAttr::Nested1.new.wont_respond_to :bar
+
+      ElemParentWithAttr::Nested2.new.wont_respond_to :foo
+      ElemParentWithAttr::Nested2.new.must_respond_to :bar
     end
   end
 end
