@@ -207,6 +207,22 @@ describe RubyXsd do
         bar.baz = "1"
         bar.valid?.must_equal true
       end
+
+      it "validates integer type" do
+        RubyXsd.models_from template % [ "foooo", "integer", "" ]
+        class Bar2
+          include ActiveModel::Validations
+          attr_accessor :baz
+          validates :baz, foooo: true
+        end
+
+        bar = Bar2.new
+        bar.baz = 1
+        bar.valid?.must_equal true
+
+        bar.baz = "1"
+        bar.valid?.wont_equal true
+      end
     end
   end
 end
