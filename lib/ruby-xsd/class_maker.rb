@@ -79,13 +79,26 @@ module ClassMaker
     type = constantize classify restrictions
       .attributes["base"].value.split(":").last
 
+    ws_action = select_children(restrictions, "whiteSpace").first
+    ws_action = ws_action.attributes["value"].value unless ws_action.nil?
+
     cls = Class.new ActiveModel::EachValidator do
       const_set "TYPE", type
+      const_set("WS_ACTION", ws_action) unless ws_action.nil?
 
       def validate_each record, attribute, value
         unless value.kind_of? self.class::TYPE
           record.errors[attribute] <<
             options[:message] || "not a #{self.class::TYPE}"
+        end
+        if self.class.const_defined? "WS_ACTION"
+          case self.class::WS_ACTION
+          when "replace" then value.gsub! /[\n\t\r ]/, " "
+          when "collapse" then
+            value.gsub! /[\n\t\r]/, " "
+            value = value.split.join " "
+          end
+          record.send "#{attribute}=", value
         end
       end
     end

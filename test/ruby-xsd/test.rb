@@ -194,8 +194,9 @@ describe RubyXsd do
       }
 
       after do
-        Object.send :remove_const, "FooValidator"
-        Object.send(:remove_const, "Bar") if defined? Bar
+        [ :FooValidator, :Bar ].each { |const|
+          Object.send(:remove_const, const) if Object.const_defined? const
+        }
       end
 
       it "creates validator" do
@@ -227,6 +228,47 @@ describe RubyXsd do
 
         bar.baz = "1"
         bar.valid?.wont_equal true
+      end
+
+      describe "Whitespace handling" do
+        let(:whitespace_schema) {
+          template % [ "string", %{<xs:whiteSpace value="%s" />} ]
+        }
+
+        let(:whitespace_string) {
+          "  abc  de\tfg\n\rhi jk   "
+        }
+
+        let(:replaced_string) {
+          "  abc  de fg  hi jk   "
+        }
+
+        let(:collapsed_string) {
+          "abc de fg hi jk"
+        }
+
+        def apply action
+          xsd = whitespace_schema % action
+          RubyXsd.models_from xsd
+          make_bar
+
+          bar = Bar.new
+          bar.baz = whitespace_string
+          bar.valid?
+          bar
+        end
+
+        it "preserves" do
+          apply("preserve").baz.must_equal whitespace_string
+        end
+
+        it "replaces" do
+          apply("replace").baz.must_equal replaced_string
+        end
+
+        it "collapses" do
+          apply("collapse").baz.must_equal collapsed_string
+        end
       end
     end
   end
