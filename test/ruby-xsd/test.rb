@@ -191,6 +191,22 @@ describe RubyXsd do
         defined?(FooValidator).must_be :==, "constant"
         FooValidator.superclass.must_be :==, ActiveModel::EachValidator
       end
+
+      it "validates string type" do
+        RubyXsd.models_from template % [ "fooo", "string", "" ]
+        class Bar
+          include ActiveModel::Validations
+          attr_accessor :baz
+          validates :baz, fooo: true
+        end
+
+        bar = Bar.new
+        bar.baz = 1
+        bar.valid?.wont_equal true
+
+        bar.baz = "1"
+        bar.valid?.must_equal true
+      end
     end
   end
 end

@@ -76,7 +76,14 @@ module ClassMaker
   def define_validator name, restrictions, target
     name = classify "#{name}_validator"
 
-    cls = Class.new ActiveModel::EachValidator
+    cls = Class.new ActiveModel::EachValidator do
+      def validate_each record, attribute, value
+        unless value.kind_of? String
+          record.errors[attribute] <<
+            options[:message] || "not a string"
+        end
+      end
+    end
     target.const_set name, cls
   end
 
