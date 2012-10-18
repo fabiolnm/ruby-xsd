@@ -179,26 +179,35 @@ describe RubyXsd do
     describe "compact form" do
       let(:template) {
         schema % %{
-          <xs:simpleType name="%s">
+          <xs:simpleType name="foo">
             <xs:restriction base="xs:%s">%s</xs:restriction>
           </xs:simpleType>
         }
       }
 
+      let(:make_bar) {
+        class Bar
+          include ActiveModel::Validations
+          attr_accessor :baz
+          validates :baz, foo: true
+        end
+      }
+
+      after do
+        Object.send :remove_const, "FooValidator"
+        Object.send(:remove_const, "Bar") if defined? Bar
+      end
+
       it "creates validator" do
-        RubyXsd.models_from template % [ "foo", "string", "" ]
+        RubyXsd.models_from template % [ "string", "" ]
 
         defined?(FooValidator).must_be :==, "constant"
         FooValidator.superclass.must_be :==, ActiveModel::EachValidator
       end
 
       it "validates string type" do
-        RubyXsd.models_from template % [ "fooo", "string", "" ]
-        class Bar
-          include ActiveModel::Validations
-          attr_accessor :baz
-          validates :baz, fooo: true
-        end
+        RubyXsd.models_from template % [ "string", "" ]
+        make_bar
 
         bar = Bar.new
         bar.baz = 1
@@ -209,14 +218,10 @@ describe RubyXsd do
       end
 
       it "validates integer type" do
-        RubyXsd.models_from template % [ "foooo", "integer", "" ]
-        class Bar2
-          include ActiveModel::Validations
-          attr_accessor :baz
-          validates :baz, foooo: true
-        end
+        RubyXsd.models_from template % [ "integer", "" ]
+        make_bar
 
-        bar = Bar2.new
+        bar = Bar.new
         bar.baz = 1
         bar.valid?.must_equal true
 
