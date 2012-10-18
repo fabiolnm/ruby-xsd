@@ -174,4 +174,23 @@ describe RubyXsd do
       ElemParentWithAttr::Nested2.new.must_respond_to :bar
     end
   end
+
+  describe "restrictions" do
+    describe "compact form" do
+      let(:template) {
+        schema % %{
+          <xs:simpleType name="%s">
+            <xs:restriction base="xs:%s">%s</xs:restriction>
+          </xs:simpleType>
+        }
+      }
+
+      it "creates validator" do
+        RubyXsd.models_from template % [ "foo", "string", "" ]
+
+        defined?(FooValidator).must_be :==, "constant"
+        FooValidator.superclass.must_be :==, ActiveModel::EachValidator
+      end
+    end
+  end
 end

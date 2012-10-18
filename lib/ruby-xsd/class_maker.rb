@@ -1,3 +1,4 @@
+require "active_model"
 require "active_support"
 
 module ClassMaker
@@ -17,6 +18,11 @@ module ClassMaker
         define_class name, complex_node, target
       else
         attr_accessor name
+      end
+    elsif is_simple node
+      if not name.nil?
+        restrictions = select_children(node, "restriction").first
+        define_validator name, restrictions, target
       end
     elsif is_complex_root node
       define_class name, node, target
@@ -40,6 +46,10 @@ module ClassMaker
     is_xml_schema_node node and node.name == "element"
   end
 
+  def is_simple node
+    is_xml_schema_node node and node.name == "simpleType"
+  end
+
   def is_complex_root node
     is_xml_schema_node node and node.name == "complexType"
   end
@@ -60,6 +70,13 @@ module ClassMaker
       elems.each { |e| make_definition e, self }
     end
 
+    target.const_set name, cls
+  end
+
+  def define_validator name, restrictions, target
+    name = classify "#{name}_validator"
+
+    cls = Class.new ActiveModel::EachValidator
     target.const_set name, cls
   end
 
