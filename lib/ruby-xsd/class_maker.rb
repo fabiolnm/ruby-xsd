@@ -86,15 +86,23 @@ module ClassMaker
       enum.attributes["value"].value
     }
 
+    pattern = select_children(restrictions, "pattern").first
+    pattern = pattern.attributes["value"].value unless pattern.nil?
+
     cls = Class.new ActiveModel::EachValidator do
       const_set "TYPE", type
       const_set("WS_ACTION", ws_action) unless ws_action.nil?
       const_set "ENUM_VALUES", enum_values
+      unless pattern.nil?
+        const_set "PATTERN", pattern
+        const_set "REGEXP", Regexp.new("^#{pattern}$")
+      end
 
       def validate_each record, attribute, value
         validate_type record, attribute, value
         handle_whitespaces record, attribute, value
         validate_enumeration record, attribute, value unless self.class::ENUM_VALUES.empty?
+        validate_regexp record, attribute, value if self.class.const_defined? "REGEXP"
       end
 
       private
@@ -119,6 +127,12 @@ module ClassMaker
       def validate_enumeration record, attribute, value
         unless self.class::ENUM_VALUES.include? value.to_s
           add_error record, attribute, "#{value}: not in #{self.class::ENUM_VALUES}"
+        end
+      end
+
+      def validate_regexp record, attribute, value
+        unless value =~ self.class::REGEXP
+          add_error record, attribute, "#{value}: not matching #{self.class::PATTERN}"
         end
       end
 

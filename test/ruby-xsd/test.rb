@@ -307,6 +307,36 @@ describe RubyXsd do
           }
         end
       end
+
+      describe "Regexp handling" do
+        let(:pattern) { '\w{3}[X-Z]{3}_\d{6}' }
+
+        let(:pattern_schema) {
+          template % [ "string", %{<xs:pattern value="#{pattern}" />} ]
+        }
+
+        let(:bar) {
+          inst = Bar.new
+          inst.baz = "AbcXYZ_123456"
+          inst
+        }
+
+        before do
+          RubyXsd.models_from pattern_schema
+          make_bar
+        end
+
+        it "accepts value matching pattern" do
+          bar.valid?.must_equal true, message: bar.errors.messages
+        end
+
+        it "rejects value not matching pattern" do
+          bar.baz = "not matches"
+          bar.valid?.wont_equal true, message: bar.errors.messages
+          bar.errors.messages[:baz].first
+            .must_equal "#{bar.baz}: not matching #{pattern}"
+        end
+      end
     end
   end
 end
