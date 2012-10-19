@@ -82,15 +82,29 @@ module ClassMaker
     ws_action = select_children(restrictions, "whiteSpace").first
     ws_action = ws_action.attributes["value"].value unless ws_action.nil?
 
+    enum_values = select_children(restrictions, "enumeration").collect { |enum|
+      enum.attributes["value"].value
+    }
+
     cls = Class.new ActiveModel::EachValidator do
       const_set "TYPE", type
       const_set("WS_ACTION", ws_action) unless ws_action.nil?
+      const_set "ENUM_VALUES", enum_values
 
       def validate_each record, attribute, value
+        validate_type record, attribute, value
+        handle_whitespaces record, attribute, value
+        validate_enumeration record, attribute, value unless self.class::ENUM_VALUES.empty?
+      end
+
+      private
+      def validate_type record, attribute, value
         unless value.kind_of? self.class::TYPE
-          record.errors[attribute] <<
-            options[:message] || "not a #{self.class::TYPE}"
+          add_error record, attribute, "#{value}: not a #{self.class::TYPE}"
         end
+      end
+
+      def handle_whitespaces record, attribute, value
         if self.class.const_defined? "WS_ACTION"
           case self.class::WS_ACTION
           when "replace" then value.gsub! /[\n\t\r ]/, " "
@@ -100,6 +114,16 @@ module ClassMaker
           end
           record.send "#{attribute}=", value
         end
+      end
+
+      def validate_enumeration record, attribute, value
+        unless self.class::ENUM_VALUES.include? value.to_s
+          add_error record, attribute, "#{value}: not in #{self.class::ENUM_VALUES}"
+        end
+      end
+
+      def add_error record, attribute, message=""
+        record.errors[attribute] << (options[:message] || message)
       end
     end
     target.const_set name, cls

@@ -270,6 +270,43 @@ describe RubyXsd do
           apply("collapse").baz.must_equal collapsed_string
         end
       end
+
+      describe "Enumeration handling" do
+        def enum_xsd values
+          enum_str = ""
+          values.each do |v|
+            enum_str << %{<xs:enumeration value="#{v}" />}
+          end
+          template % [ "string", enum_str ]
+        end
+
+        let(:range) { (5..10).to_a + (20..25).to_a }
+        let(:out_of_range) { (1..30).to_a - range }
+        let(:bar) { Bar.new }
+
+        before do
+          RubyXsd.models_from enum_xsd range
+          make_bar
+        end
+
+        it "accepts value in range" do
+          range.each { |val|
+            bar.baz = val.to_s
+            bar.valid?.must_equal true, message: bar.errors.messages
+          }
+        end
+
+        it "rejects value out of range" do
+          out_of_range.each { |val|
+            bar.baz = val.to_s
+            bar.valid?.wont_equal true, message: bar.errors.messages
+
+            range_str = range.collect{|v| v.to_s}.to_s
+            bar.errors.messages[:baz].first
+            .must_equal "#{val}: not in #{range_str}"
+          }
+        end
+      end
     end
   end
 end
