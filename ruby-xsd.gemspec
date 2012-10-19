@@ -10,7 +10,7 @@ Gem::Specification.new do |gem|
   gem.email         = ["fabio@miranti.net.br"]
   gem.description   = %q{Generates in-memory ruby classes from XSD files}
   gem.summary       = %q{}
-  gem.homepage      = ""
+  gem.homepage      = "https://github.com/fabiolnm/ruby-xsd"
 
   gem.files         = `git ls-files`.split($/)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
